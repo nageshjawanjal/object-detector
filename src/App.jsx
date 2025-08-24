@@ -19,7 +19,6 @@ const App = () => {
   const videoRef = useRef(null);
   const animationFrameRef = useRef(null);
 
-  // Helper: Show temporary message
   const showMessage = (text, error = false) => {
     setMessage(text);
     setIsError(error);
@@ -29,7 +28,7 @@ const App = () => {
     }, 3000);
   };
 
-  // Load scripts
+  // Load TensorFlow scripts
   useEffect(() => {
     const loadScript = (src, cb) => {
       const script = document.createElement("script");
@@ -63,7 +62,7 @@ const App = () => {
             setModel(loadedModel);
             setIsLoading(false);
             showMessage("All set! The AI model is loaded and ready to go.");
-            setShowSplash(false); // Hide splash after model loads
+            setShowSplash(false);
           }
         } catch (err) {
           console.error("Error loading model:", err);
@@ -76,7 +75,7 @@ const App = () => {
     }
   }, [scriptsLoaded]);
 
-  // Start webcam with facingMode
+  // Start webcam
   useEffect(() => {
     const startWebcam = async () => {
       try {
@@ -135,17 +134,12 @@ const App = () => {
         });
       }
     } catch (err) {
-      // console.error("Recognition error:", err);
-      // setRecognitionResult({
-      //   name: "Error recognizing image.",
-      //   confidence: null,
-      // });
+      // ignore recognition error
     }
 
     animationFrameRef.current = requestAnimationFrame(recognizeImage);
   };
 
-  // Button handlers
   const startRecognition = () => {
     setIsRecognizing(true);
     showMessage("Recognition started! Looking for objects...");
@@ -160,7 +154,12 @@ const App = () => {
   };
 
   return (
-    <div className="flex flex-col h-screen bg-gray-100 dark:bg-gray-900">
+    <div>
+      <header className="app-header">
+        <h1 className="app-title">AI Object Recognition</h1>
+        <p className="app-subtitle">Made with ❤️ by Nagesh Jaunjal</p>
+      </header>
+      {/* Splash */}
       {showSplash && (
         <div className="splash-screen">
           <h1 className="splash-title">Made with ❤️ by Nagesh Jaunjal</h1>
@@ -175,78 +174,62 @@ const App = () => {
           </div>
         </div>
       )}
-      {/* Message Box */}
+
+      {/* Message */}
       {message && (
-        <div
-          className={`fixed top-20 left-1/2 transform -translate-x-1/2 z-50 p-4 rounded-lg shadow-lg ${
-            isError
-              ? "bg-red-500 text-white"
-              : "bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
-          }`}
-        >
+        <div className={`fixed-message ${isError ? "error" : "success"}`}>
           {message}
         </div>
       )}
 
-      {/* Camera Section (75% height) */}
-      <div className="relative w-full h-[75vh] bg-black">
-        <video
-          ref={videoRef}
-          className="w-full h-full object-cover"
-          autoPlay
-          playsInline
-        ></video>
+      {/* Camera */}
+      <div className="camera-section">
+        <video ref={videoRef} autoPlay playsInline />
         {isLoading && (
-          <div className="absolute inset-0 flex items-center justify-center bg-gray-800 bg-opacity-70">
-            <div className="animate-spin rounded-full h-12 w-12 border-4 border-dashed border-blue-500"></div>
+          <div className="camera-overlay">
+            <div className="video-loader"></div>
           </div>
         )}
       </div>
 
-      {/* Controls & Results (25% height) */}
-      <div className="flex-1 w-full max-w-md mx-auto bg-white dark:bg-gray-800 rounded-t-2xl shadow-xl p-4 sm:p-6 overflow-y-auto">
-        {/* Buttons */}
-        <div className="flex flex-wrap justify-center gap-4 mb-4">
+      {/* Controls */}
+      <div className="controls-section">
+        <div className="button-group">
           {!isRecognizing ? (
             <button
               onClick={startRecognition}
               disabled={isLoading}
-              className={`bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-xl shadow-md transition ${
-                isLoading ? "opacity-50 cursor-not-allowed" : ""
-              }`}
+              className="start-btn"
             >
               ▶️ Start
             </button>
           ) : (
-            <button
-              onClick={stopRecognition}
-              className="bg-red-600 hover:bg-red-700 text-white font-semibold py-3 px-6 rounded-xl shadow-md transition"
-            >
+            <button onClick={stopRecognition} className="stop-btn">
               ⏹ Stop
             </button>
           )}
-
-          <button
-            onClick={flipCamera}
-            className="bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-6 rounded-xl shadow-md transition"
-          >
+          <button onClick={flipCamera} className="flip-btn">
             🔄 Flip
           </button>
         </div>
 
-        {/* Results */}
-        <div className="w-full bg-gray-50 dark:bg-gray-900 rounded-xl p-4 shadow-inner border border-gray-200 dark:border-gray-700">
-          <h2 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white mb-2">
-            Recognition Results
-          </h2>
-          <div className="text-gray-700 dark:text-gray-300 min-h-[50px] text-center">
+        <div
+          className={`results-card ${
+            document.body.classList.contains("dark") ? "dark" : ""
+          }`}
+        >
+          <h2>Recognition Results</h2>
+          <div className="text-center min-h-[50px]">
             {recognitionResult.name ? (
               <>
-                <p className="text-base sm:text-lg font-bold">Detected:</p>
+                <p className="font-bold">Detected:</p>
                 <p className="text-xl font-semibold">
                   {recognitionResult.name}
                 </p>
               </>
+            ) : recognitionResult.confidence &&
+              recognitionResult.confidence.startsWith("⚠️") ? (
+              <p className="limited-dataset">{recognitionResult.confidence}</p>
             ) : (
               <p className="text-gray-500 dark:text-gray-400">
                 {isLoading
